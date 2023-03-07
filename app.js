@@ -9,9 +9,7 @@ const app = express();
 app.use(cors());
 app.use(morgan("combined"));
 app.use(express.json());
-app.get("/ping", (req, res, next) => {
-  res.json({ message: "pong" });
-});
+
 const server = http.createServer(app);
 const PORT = process.env.PORT;
 
@@ -20,14 +18,24 @@ const configuration = new Configuration({
   organization: process.env.ORG_ID,
   apiKey: process.env.API_KEY,
 });
+
 const openai = new OpenAIApi(configuration);
-const openAI = async () => {
+
+const openAI = async (req) => {
   const completion = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: "너는 누구야" }],
+    messages: [{ role: "user", content: req }],
   });
-  console.log("이게 찍힌거임?", completion.data.choices[0].message);
+
+  console.log("message : ", completion.data.choices[0].message.content);
+  return completion.data.choices[0].message.content;
 };
+
+app.post("/", async (req, res) => {
+  const response = await openAI(req.body.message);
+
+  res.json({ message: response });
+});
 
 const start = async () => {
   try {
